@@ -307,7 +307,7 @@ export default function PublicDashboard() {
                                     </TR>
                                 </THead>
                                 <TBody>
-                                    {rows.map((r, i) => (
+                                    {Array.isArray(rows) && rows.map((r, i) => (
                                         <motion.tr
                                             key={r.teamId}
                                             className={getStandingRowClass(i)}
