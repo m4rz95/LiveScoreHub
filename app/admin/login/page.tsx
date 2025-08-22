@@ -24,7 +24,8 @@ export default function LoginPage() {
     if (res?.error) {
       setError("Email atau password salah")
     } else {
-      router.push("/teams") // <--- redirect manual
+      console.log("error:", error)
+      // router.push("/teams") // <--- redirect manual
     }
   }
 
