@@ -34,12 +34,12 @@ export const authOptions: NextAuthOptions = {
     session: { strategy: "jwt" },
     secret: process.env.NEXTAUTH_SECRET,
     callbacks: {
-        async redirect({ url, baseUrl }) {
-            // baseUrl diambil otomatis dari NEXTAUTH_URL
-            if (url.startsWith("/")) return `${baseUrl}${url}`;
-            if (new URL(url).origin === baseUrl) return url;
-            return baseUrl;
-        },
+        // async redirect({ url, baseUrl }) {
+        //     // baseUrl diambil otomatis dari NEXTAUTH_URL
+        //     if (url.startsWith("/")) return `${baseUrl}${url}`;
+        //     if (new URL(url).origin === baseUrl) return url;
+        //     return baseUrl;
+        // },
     }
 
 };
