@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table"
 import { easeOut, motion, Variants } from "framer-motion"
+import { supabase } from "@/lib/supabaseClient";
 
 type Match = {
     id?: number
@@ -68,9 +69,41 @@ export default function PublicDashboard() {
     }
 
     useEffect(() => {
-        loadStandings()
-        loadMatches()
-    }, [])
+        // load pertama kali
+        loadStandings();
+        loadMatches();
+
+        // subscribe table standings
+        const standingsChannel = supabase
+            .channel('standings-changes')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'standings' },
+                (payload) => {
+                    console.log('Standings updated:', payload);
+                    loadStandings(); // refresh data otomatis
+                }
+            )
+            .subscribe();
+
+        // subscribe table matches
+        const matchesChannel = supabase
+            .channel('matches-changes')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'matches' },
+                (payload) => {
+                    console.log('Matches updated:', payload);
+                    loadMatches(); // refresh data otomatis
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(standingsChannel);
+            supabase.removeChannel(matchesChannel);
+        };
+    }, []);
 
     // Fungsi untuk menentukan warna background baris berdasarkan status
     const getRowClass = (status?: string) => {
