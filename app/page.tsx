@@ -168,7 +168,7 @@ export default function PublicDashboard() {
     return (
         <div className="p-4 grid grid-cols-12 gap-4">
             {/* HASIL PERTANDINGAN */}
-            <div className="col-span-12 md:col-span-4">
+            <div className="col-span-12 lg:col-span-4">
                 <Card className="w-full shadow-xl rounded-2xl">
                     <CardHeader className="text-lg font-bold tracking-wide text-gray-700 py-1">
                         HASIL PERTANDINGAN
@@ -206,7 +206,7 @@ export default function PublicDashboard() {
             </div>
 
             {/* LIVE SCORE */}
-            <div className="col-span-12 md:col-span-8">
+            <div className="col-span-12 lg:col-span-8">
                 <Card className="w-full">
                     <CardHeader className="font-bold text-lg flex items-center space-x-2 rounded-lg">
                         <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs">
