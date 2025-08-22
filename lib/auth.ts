@@ -12,22 +12,18 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                console.log("Authorize input:", credentials);
-                if (!credentials?.email || !credentials?.password) return null;
-
-                const user = await prisma.user.findUnique({ where: { email: credentials.email } });
-                console.log("User found:", user);
-
-                if (!user) return null;
-
-                const isValid = await bcrypt.compare(credentials.password, user.password);
-                console.log("Password valid:", isValid);
-
-                if (!isValid) return null;
-
-                return { id: String(user.id), name: user.name, email: user.email };
+                try {
+                    if (!credentials?.email || !credentials?.password) return null;
+                    const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+                    if (!user) return null;
+                    const isValid = await bcrypt.compare(credentials.password, user.password);
+                    if (!isValid) return null;
+                    return { id: String(user.id), name: user.name, email: user.email };
+                } catch (err) {
+                    console.error("Authorize error:", err);
+                    return null; // jangan throw, supaya tidak redirect ke /api/auth/error
+                }
             }
-
         }),
     ],
     pages: { signIn: "/admin/login" },
@@ -35,7 +31,6 @@ export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     callbacks: {
         async redirect({ url, baseUrl }) {
-            // baseUrl diambil otomatis dari NEXTAUTH_URL
             if (url.startsWith("/")) return `${baseUrl}${url}`;
             if (new URL(url).origin === baseUrl) return url;
             return baseUrl;
