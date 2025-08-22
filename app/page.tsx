@@ -124,6 +124,20 @@ export default function PublicDashboard() {
         }
     }
 
+    // helper row color
+    function getRowColor(status?: string) {
+        switch (status) {
+            case "live":
+                return "bg-red-100 hover:bg-red-200"
+            case "finished":
+                return "bg-green-100 hover:bg-green-200"
+            case "scheduled":
+            default:
+                return "bg-gray-100 hover:bg-gray-200"
+        }
+    }
+
+
     const tableVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         show: {
@@ -166,7 +180,7 @@ export default function PublicDashboard() {
                                     {matches.map((m, i) => (
                                         <motion.tr
                                             key={m.id ?? i}
-                                            className={`cursor-pointer rounded-lg`}
+                                            className={`cursor-pointer rounded-lg ${getRowColor(m.status)}`}
                                             custom={i}
                                             variants={rowVariants}
                                             initial="hidden"
@@ -290,6 +304,7 @@ export default function PublicDashboard() {
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ duration: 0.4, delay: i * 0.05 }}
+                                                className={i === 0 ? "bg-green-200 text-black font-bold" : "bg-white"}
                                             >
                                                 <TD>{i + 1}</TD>
                                                 <TD className="font-semibold">{r.teamName}</TD>
@@ -329,6 +344,6 @@ export default function PublicDashboard() {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </div >
     )
 }

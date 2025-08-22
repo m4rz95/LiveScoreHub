@@ -6,13 +6,19 @@ import { Input } from '@/components/ui/input'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
+import { createClient } from "@supabase/supabase-js"
 
-type Match = { 
-  id?: number; 
-  homeTeam: { id: number; name: string }; 
-  awayTeam: { id: number; name: string }; 
-  homeScore?: number | null; 
-  awayScore?: number | null; 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+type Match = {
+  id?: number;
+  homeTeam: { id: number; name: string };
+  awayTeam: { id: number; name: string };
+  homeScore?: number | null;
+  awayScore?: number | null;
   status?: 'scheduled' | 'live' | 'finished';
   played?: boolean;
 }
@@ -21,7 +27,7 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<Match[]>([])
   const [preview, setPreview] = useState<Match[]>([])
   const [loading, setLoading] = useState<number | null>(null)
-  
+
   // modal state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMatch, setDialogMatch] = useState<Match | null>(null)
@@ -29,12 +35,44 @@ export default function MatchesPage() {
   const [dialogAS, setDialogAS] = useState(0)
   const [dialogStatus, setDialogStatus] = useState<'scheduled' | 'live' | 'finished'>('scheduled');
 
-  async function load() { 
-    const res = await fetch('/api/matches', { cache: 'no-store' }) 
-    setMatches(await res.json()) 
+  async function load() {
+    const res = await fetch('/api/matches', { cache: 'no-store' })
+    setMatches(await res.json())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+
+    // Realtime listener Supabase
+    const channel = supabase
+      .channel("public:matches")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches" },
+        (payload) => {
+          setMatches((prev) => {
+            let updated = [...prev]
+
+            if (payload.eventType === "INSERT") {
+              updated = [...prev, payload.new as Match]
+            }
+            if (payload.eventType === "UPDATE") {
+              updated = prev.map(m => m.id === payload.new.id ? (payload.new as Match) : m)
+            }
+            if (payload.eventType === "DELETE") {
+              updated = prev.filter(m => m.id !== payload.old.id)
+            }
+
+            return updated
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms))
@@ -85,30 +123,29 @@ export default function MatchesPage() {
   }
 
   async function save() {
-    await fetch('/api/matches/save', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(preview) 
+    await fetch('/api/matches/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(preview)
     })
     setPreview([])
-    await load()
     toast.success("Jadwal berhasil disimpan 🎉")
   }
 
   async function updateScore(m: Match, hs: number, as: number, status: 'scheduled' | 'live' | 'finished') {
     try {
       setLoading(m.id!)
-      const res = await fetch('/api/matches/' + m.id, { 
-        method: 'PATCH', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ homeScore: hs, awayScore: as, status, played: true }) 
+      const res = await fetch('/api/matches/' + m.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ homeScore: hs, awayScore: as, status, played: true })
       })
 
       if (!res.ok) throw new Error(await res.text())
 
       toast.success("Skor & status berhasil diperbarui ✅")
       setDialogOpen(false)
-      await load()
+      // ❌ Tidak perlu `await load()`, karena realtime otomatis update
     } catch (err: any) {
       toast.error("Gagal update ❌: " + err.message)
       setDialogOpen(false)
@@ -121,7 +158,7 @@ export default function MatchesPage() {
   const list = preview.length > 0 ? preview : matches
 
   function getRowColor(status?: string) {
-    switch(status) {
+    switch (status) {
       case 'live': return 'bg-green-200 hover:bg-green-300'
       case 'finished': return 'bg-gray-300 hover:bg-gray-400'
       default: return 'bg-white hover:bg-orange-100'
@@ -142,46 +179,46 @@ export default function MatchesPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-          <Table>
-            <THead>
-              <TR>
-                <TH>#</TH>
-                <TH>Home</TH>
-                <TH>Score</TH>
-                <TH>Away</TH>
-                <TH>Status</TH>
-                <TH>Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {list.map((m, i) => (
-                <motion.tr
-                  key={m.id ?? `${m.homeTeam.id}-${m.awayTeam.id}`}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={`${getRowColor(m.status)} cursor-pointer`}
-                  onClick={() => {
-                    if (!m.id) return
-                    setDialogMatch(m)
-                    setDialogHS(m.homeScore ?? 0)
-                    setDialogAS(m.awayScore ?? 0)
-                    setDialogStatus(m.status ?? 'scheduled')
-                    setDialogOpen(true)
-                  }}
-                >
-                  <TD>{i + 1}</TD>
-                  <TD>{m.homeTeam.name}</TD>
-                  <TD>{m.homeScore ?? 0} - {m.awayScore ?? 0}</TD>
-                  <TD>{m.awayTeam.name}</TD>
-                  <TD>{m.status}</TD>
-                  <TD>
-                    {m.id ? <span className="text-gray-500">Klik baris untuk update</span> : <span className="text-gray-400">Belum tersimpan</span>}
-                  </TD>
-                </motion.tr>
-              ))}
-            </TBody>
-          </Table>
+            <Table>
+              <THead>
+                <TR>
+                  <TH>#</TH>
+                  <TH>Home</TH>
+                  <TH>Score</TH>
+                  <TH>Away</TH>
+                  <TH>Status</TH>
+                  <TH>Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {list.map((m, i) => (
+                  <motion.tr
+                    key={m.id ?? `${m.homeTeam.id}-${m.awayTeam.id}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`${getRowColor(m.status)} cursor-pointer`}
+                    onClick={() => {
+                      if (!m.id) return
+                      setDialogMatch(m)
+                      setDialogHS(m.homeScore ?? 0)
+                      setDialogAS(m.awayScore ?? 0)
+                      setDialogStatus(m.status ?? 'scheduled')
+                      setDialogOpen(true)
+                    }}
+                  >
+                    <TD>{i + 1}</TD>
+                    <TD>{m.homeTeam.name}</TD>
+                    <TD>{m.homeScore ?? 0} - {m.awayScore ?? 0}</TD>
+                    <TD>{m.awayTeam.name}</TD>
+                    <TD>{m.status}</TD>
+                    <TD>
+                      {m.id ? <span className="text-gray-500">Klik baris untuk update</span> : <span className="text-gray-400">Belum tersimpan</span>}
+                    </TD>
+                  </motion.tr>
+                ))}
+              </TBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
