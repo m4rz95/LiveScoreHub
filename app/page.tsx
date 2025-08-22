@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table"
-import { motion } from "framer-motion"
+import { easeOut, motion, Variants } from "framer-motion"
 
 type Match = {
     id?: number
@@ -105,16 +105,17 @@ export default function PublicDashboard() {
             default: return <span className="px-2 py-1 bg-gray-300 text-black rounded-full text-xs">MENUNGGU</span>
         }
     }
-    const tableVariants = {
+    const tableVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         show: {
             opacity: 1,
             y: 0,
-            transition: { duration: 0.5, ease: "easeOut" }
+            transition: { duration: 0.5, ease: easeOut }
         }
     };
 
-    const rowVariants = {
+
+    const rowVariants: Variants = {
         hidden: { opacity: 0, y: 10 },
         show: (i: any) => ({
             opacity: 1,
@@ -122,7 +123,7 @@ export default function PublicDashboard() {
             transition: {
                 delay: i * 0.1,
                 duration: 0.4,
-                ease: "easeOut"
+                ease: easeOut
             }
         }),
         hover: {
