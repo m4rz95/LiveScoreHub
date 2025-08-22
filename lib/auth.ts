@@ -3,10 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcrypt";
 
-const baseUrl =
-    process.env.NEXTAUTH_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
+const baseUrl = process.env.NEXTAUTH_URL
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({

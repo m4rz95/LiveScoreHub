@@ -9,24 +9,24 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const router = useRouter()
 
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault()
-  setError("")
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
 
-  const res = await signIn("credentials", {
-    redirect: false,
-    email,
-    password,
-  })
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    })
 
-  console.log("Login response:", res) // <--- debug
+    console.log("Login response:", res) // <--- debug
 
-  if (res?.error) {
-    setError("Email atau password salah")
-  } else {
-    router.push("/teams") // <--- redirect manual
+    if (res?.error) {
+      setError("Email atau password salah")
+    } else {
+      router.push("/teams") // <--- redirect manual
+    }
   }
-}
 
 
   return (
