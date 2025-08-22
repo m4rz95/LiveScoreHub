@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  city      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  homeMatches Match[] @relation("homeTeam")
+  awayMatches Match[] @relation("awayTeam")
+}
+
+model Match {
+  id          Int      @id @default(autoincrement())
+  homeTeamId  Int
+  awayTeamId  Int
+  homeTeam    Team     @relation("homeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team     @relation("awayTeam", fields: [awayTeamId], references: [id])
+  homeScore   Int?     @default(0)
+  awayScore   Int?     @default(0)
+  played      Boolean  @default(false)
+  matchDate   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  status      String   @default("scheduled")
+
+  @@unique([homeTeamId, awayTeamId])
+}
