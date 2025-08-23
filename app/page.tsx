@@ -3,12 +3,8 @@ import { useEffect, useState } from "react"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table"
 import { easeOut, motion, Variants } from "framer-motion"
-import { createClient } from "@supabase/supabase-js"
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from "@/lib/supabaseClient"
+import { LayoutGroup, AnimatePresence } from "framer-motion"
 
 type Match = {
     id?: number
@@ -82,17 +78,23 @@ export default function PublicDashboard() {
 
         // pasang realtime listener untuk matches
         const channel = supabase
-            .channel("public:matches")
+            .channel("matches-realtime")
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "matches" },
-                async () => {
-                    // setiap ada perubahan, refetch data matches
-                    const res = await fetch("/api/matches", { cache: "no-store" })
-                    const data: Match[] = await res.json()
-                    updateMatches(data)
+                { event: "*", schema: "public", table: "Match" },
+                payload => {
+                    console.log("Realtime change received!", payload)
+
+                    setMatches(prev => {
+                        if (payload.eventType === "INSERT" || payload.eventType === "UPDATE" || payload.eventType === "DELETE") {
+                            loadMatches()
+                            loadStandings()
+                        }
+                        return prev
+                    })
                 }
             )
+
             .subscribe()
 
         return () => {
@@ -118,7 +120,7 @@ export default function PublicDashboard() {
             default:
                 return (
                     <span className="px-2 py-1 bg-gray-300 text-black rounded-full text-xs">
-                        MENUNGGU
+                        SCHEDULED
                     </span>
                 )
         }
@@ -189,9 +191,34 @@ export default function PublicDashboard() {
                                         >
                                             <TD>{i + 1}</TD>
                                             <TD className="font-semibold">{m.homeTeam.name}</TD>
-                                            <TD className="text-center">
-                                                {m.homeScore ?? 0} - {m.awayScore ?? 0}
+                                            <TD className="text-center text-2xl font-bold">
+                                                <AnimatePresence mode="popLayout">
+                                                    <motion.span
+                                                        key={m.homeScore}
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 10 }}
+                                                        transition={{ duration: 0.3 }}
+                                                        className="inline-block min-w-[1ch]" // biar stabil lebar
+                                                    >
+                                                        {m.homeScore ?? 0}
+                                                    </motion.span>
+                                                </AnimatePresence>
+                                                {" - "}
+                                                <AnimatePresence mode="popLayout">
+                                                    <motion.span
+                                                        key={m.awayScore}
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 10 }}
+                                                        transition={{ duration: 0.3 }}
+                                                        className="inline-block min-w-[1ch]"
+                                                    >
+                                                        {m.awayScore ?? 0}
+                                                    </motion.span>
+                                                </AnimatePresence>
                                             </TD>
+
                                             <TD className="font-semibold">{m.awayTeam.name}</TD>
                                             <TD className="flex justify-center">
                                                 {getStatusBadge(m.status)}
@@ -263,9 +290,42 @@ export default function PublicDashboard() {
                                                 {m.awayTeam.name}
                                             </div>
                                         </div>
-                                        <div className="text-4xl sm:text-9xl font-extrabold">
-                                            {m.homeScore} : {m.awayScore}
+                                        <div className="text-6xl sm:text-9xl font-extrabold flex gap-6">
+                                            <AnimatePresence mode="popLayout">
+                                                <motion.span
+                                                    key={m.homeScore}
+                                                    initial={{ rotateX: -90, opacity: 0 }}
+                                                    animate={{ rotateX: 0, opacity: 1 }}
+                                                    exit={{ rotateX: 90, opacity: 0 }}
+                                                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                                                    style={{
+                                                        display: "inline-block",
+                                                        transformOrigin: "center bottom", // biar efek flip ke atas
+                                                    }}
+                                                >
+                                                    {m.homeScore}
+                                                </motion.span>
+                                            </AnimatePresence>
+
+                                            <span>:</span>
+
+                                            <AnimatePresence mode="popLayout">
+                                                <motion.span
+                                                    key={m.awayScore}
+                                                    initial={{ rotateX: -90, opacity: 0 }}
+                                                    animate={{ rotateX: 0, opacity: 1 }}
+                                                    exit={{ rotateX: 90, opacity: 0 }}
+                                                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                                                    style={{
+                                                        display: "inline-block",
+                                                        transformOrigin: "center bottom",
+                                                    }}
+                                                >
+                                                    {m.awayScore}
+                                                </motion.span>
+                                            </AnimatePresence>
                                         </div>
+
                                     </div>
                                 ))
                             )}
@@ -296,49 +356,52 @@ export default function PublicDashboard() {
                                         <TH>Last 5</TH>
                                     </TR>
                                 </THead>
-                                <TBody>
-                                    {Array.isArray(rows) &&
-                                        rows.map((r, i) => (
-                                            <motion.tr
-                                                key={r.teamId}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.4, delay: i * 0.05 }}
-                                                className={i === 0 ? "bg-green-200 text-black font-bold" : "bg-white"}
-                                            >
-                                                <TD>{i + 1}</TD>
-                                                <TD className="font-semibold">{r.teamName}</TD>
-                                                <TD>{r.played}</TD>
-                                                <TD>{r.win}</TD>
-                                                <TD>{r.draw}</TD>
-                                                <TD>{r.loss}</TD>
-                                                <TD>{r.gf}</TD>
-                                                <TD>{r.ga}</TD>
-                                                <TD>{r.gd}</TD>
-                                                <TD>{r.points}</TD>
-                                                <TD>
-                                                    <div className="flex gap-1 justify-center">
-                                                        {(r.last5 ?? []).map((res, j) => (
-                                                            <span
-                                                                key={j}
-                                                                className={`w-5 h-5 flex items-center justify-center text-xs rounded-full
+                                <LayoutGroup>
+                                    <TBody>
+                                        {Array.isArray(rows) &&
+                                            rows.map((r, i) => (
+                                                <motion.tr
+                                                    key={r.teamId}
+                                                    layout
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.4, delay: i * 0.05 }}
+                                                    className={i === 0 ? "bg-green-200 text-black font-bold" : "bg-white"}
+                                                >
+                                                    <TD>{i + 1}</TD>
+                                                    <TD className="font-semibold">{r.teamName}</TD>
+                                                    <TD>{r.played}</TD>
+                                                    <TD>{r.win}</TD>
+                                                    <TD>{r.draw}</TD>
+                                                    <TD>{r.loss}</TD>
+                                                    <TD>{r.gf}</TD>
+                                                    <TD>{r.ga}</TD>
+                                                    <TD>{r.gd}</TD>
+                                                    <TD>{r.points}</TD>
+                                                    <TD>
+                                                        <div className="flex gap-1 justify-center">
+                                                            {(r.last5 ?? []).map((res, j) => (
+                                                                <span
+                                                                    key={j}
+                                                                    className={`w-5 h-5 flex items-center justify-center text-xs rounded-full
                                 ${res === "W"
-                                                                        ? "bg-green-500 text-white"
-                                                                        : res === "D"
-                                                                            ? "bg-yellow-500 text-black"
-                                                                            : res === "L"
-                                                                                ? "bg-red-500 text-white"
-                                                                                : "bg-gray-300"
-                                                                    }`}
-                                                            >
-                                                                {res}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </TD>
-                                            </motion.tr>
-                                        ))}
-                                </TBody>
+                                                                            ? "bg-green-500 text-white"
+                                                                            : res === "D"
+                                                                                ? "bg-yellow-500 text-black"
+                                                                                : res === "L"
+                                                                                    ? "bg-red-500 text-white"
+                                                                                    : "bg-gray-300"
+                                                                        }`}
+                                                                >
+                                                                    {res}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </TD>
+                                                </motion.tr>
+                                            ))}
+                                    </TBody>
+                                </LayoutGroup>
                             </Table>
                         </div>
                     </CardContent>

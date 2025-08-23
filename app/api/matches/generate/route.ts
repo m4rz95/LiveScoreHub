@@ -1,25 +1,24 @@
 // src/app/api/matches/generate/route.ts
-import { prisma } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server"
+import { supabase } from "@/lib/supabaseClient";
 
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    const j = Math.floor(Math.random() * (i + 1))
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
   return arr
 }
 
-function scheduleNoRepeat(pairs: { homeTeamId: number, awayTeamId: number }[]) {
+function scheduleNoRepeat(pairs: { homeTeamId: number; awayTeamId: number }[]) {
   const schedule: typeof pairs = []
   let lastTeams = new Set<number>()
 
   while (pairs.length > 0) {
     const idx = pairs.findIndex(
-      p => !lastTeams.has(p.homeTeamId) && !lastTeams.has(p.awayTeamId)
+      (p) => !lastTeams.has(p.homeTeamId) && !lastTeams.has(p.awayTeamId)
     )
     if (idx === -1) {
-      // fallback: reset lastTeams biar tetap jalan
       lastTeams.clear()
       continue
     }
@@ -31,12 +30,21 @@ function scheduleNoRepeat(pairs: { homeTeamId: number, awayTeamId: number }[]) {
 }
 
 export async function POST() {
-  const teams = await prisma.team.findMany({ orderBy: { id: 'asc' } })
-  if (teams.length < 2) {
-    return NextResponse.json({ error: 'Minimal 2 tim' }, { status: 400 })
+  const { data: teams, error } = await supabase
+    .from("Team")
+    .select("*")
+    .order("id", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching teams:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const pairs = []
+  if (!teams || teams.length < 2) {
+    return NextResponse.json({ error: "Minimal 2 tim" }, { status: 400 })
+  }
+
+  const pairs: { homeTeamId: number; awayTeamId: number }[] = []
   for (let i = 0; i < teams.length; i++) {
     for (let j = i + 1; j < teams.length; j++) {
       pairs.push({ homeTeamId: teams[i].id, awayTeamId: teams[j].id })
@@ -49,9 +57,13 @@ export async function POST() {
   const now = new Date()
   const results = ordered.map((p, idx) => ({
     ...p,
-    matchDate: new Date(now.getFullYear(), now.getMonth(), now.getDate() + idx),
-    homeTeam: teams.find(t => t.id === p.homeTeamId),
-    awayTeam: teams.find(t => t.id === p.awayTeamId),
+    matchDate: new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + idx
+    ).toISOString(), // penting: simpan ISO biar aman ke DB
+    homeTeam: teams.find((t) => t.id === p.homeTeamId),
+    awayTeam: teams.find((t) => t.id === p.awayTeamId),
   }))
 
   return NextResponse.json(results)

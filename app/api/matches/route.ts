@@ -1,18 +1,37 @@
-import { prisma } from '@/lib/db'
-import { NextResponse } from 'next/server'
-export const dynamic = "force-dynamic";
+// src/app/api/matches/route.ts
+import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export async function GET() {
   try {
-    const matches = await prisma.match.findMany({
-      include: { homeTeam: true, awayTeam: true },
-      orderBy: [{ matchDate: 'asc' }, { id: 'asc' }]
-    })
-    // Prisma findMany() sudah aman kalau tabel kosong → kembalikan []
-    return NextResponse.json(matches ?? [])
+    const { data, error } = await supabase
+      .from("Match")
+      .select(`
+        id,
+        matchDate,
+        homeScore,
+        awayScore,
+        played,
+        status,
+        homeTeam:homeTeamId ( id, name ),
+        awayTeam:awayTeamId ( id, name )
+      `)
+      .order("matchDate", { ascending: true })
+      .order("id", { ascending: true })
+
+    if (error) {
+      console.error("Error fetching matches:", error)
+      return NextResponse.json([], { status: 500 })
+    }
+
+    return NextResponse.json(data ?? [])
   } catch (err) {
-    console.error("Error fetching matches:", err)
-    // Jangan biarkan Next.js kirim HTML error → balikin JSON kosong
+    console.error("Unexpected error fetching matches:", err)
     return NextResponse.json([], { status: 500 })
   }
 }

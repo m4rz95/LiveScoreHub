@@ -39,7 +39,7 @@ export default function StandingsPage() {
       .channel('matches-standings')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'matches' },
+        { event: '*', schema: 'public', table: "Match" },
         () => {
           // setiap ada perubahan di tabel matches, reload standings
           load()

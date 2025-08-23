@@ -1,19 +1,35 @@
-import { prisma } from '@/lib/db'
-import { NextResponse } from 'next/server'
-export const dynamic = "force-dynamic";
+// app/api/standings/route.ts
+import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
-    const teams = await prisma.team.findMany({ orderBy: { name: 'asc' } })
-    const matches = await prisma.match.findMany({
-      where: { played: true },
-      orderBy: { id: 'asc' } // urut kronologis
-    })
+    // Ambil semua tim
+    const { data: teams, error: teamErr } = await supabase
+      .from("Team")
+      .select("*")
+      .order("name", { ascending: true })
 
-    // Jika tidak ada tim sama sekali → kembalikan array kosong
-    if (teams.length === 0) {
+    if (teamErr) throw teamErr
+    if (!teams || teams.length === 0) {
       return NextResponse.json([])
     }
+
+    // Ambil semua match yg udah dimainkan
+    const { data: match, error: matchErr } = await supabase
+      .from("Match")
+      .select("*")
+      .eq("played", true)
+      .order("id", { ascending: true }) // kronologis
+
+    if (matchErr) throw matchErr
 
     // inisialisasi tabel
     const table = new Map()
@@ -21,20 +37,25 @@ export async function GET() {
       table.set(t.id, {
         teamId: t.id,
         teamName: t.name,
-        played: 0, win: 0, draw: 0, loss: 0,
-        gf: 0, ga: 0, gd: 0, points: 0,
-        last5: [] as string[]
+        played: 0,
+        win: 0,
+        draw: 0,
+        loss: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        points: 0,
+        last5: [] as string[],
       })
     }
 
     // proses semua match
-    for (const m of matches) {
+    for (const m of match ?? []) {
       const hs = m.homeScore ?? 0
       const as = m.awayScore ?? 0
       const home = table.get(m.homeTeamId)
       const away = table.get(m.awayTeamId)
 
-      // skip match jika salah satu tim tidak ditemukan (data corrupt)
       if (!home || !away) continue
 
       home.played++
@@ -63,22 +84,24 @@ export async function GET() {
         away.last5.push("D")
       }
 
-      // simpan hanya 5 terakhir
       home.last5 = home.last5.slice(-5)
       away.last5 = away.last5.slice(-5)
     }
 
     // urutkan klasemen
-    const rows = Array.from(table.values()).sort((a, b) => (
+    const rows = Array.from(table.values()).sort((a, b) =>
       b.points - a.points ||
       b.gd - a.gd ||
       b.gf - a.gf ||
       a.teamName.localeCompare(b.teamName)
-    ))
+    )
 
     return NextResponse.json(rows)
   } catch (err) {
     console.error("Error fetching standings:", err)
-    return NextResponse.json({ error: "Failed to fetch standings" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to fetch standings" },
+      { status: 500 }
+    )
   }
 }
