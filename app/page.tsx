@@ -276,70 +276,76 @@ export default function PublicDashboard() {
     return (
         <div className="p-4 grid grid-cols-12 gap-4">
             {/* HASIL PERTANDINGAN */}
-            <div className="col-span-12 lg:col-span-4">
+            <div className="col-span-12 lg:col-span-4 order-2 lg:order-1">
                 <Card className="w-full shadow-xl rounded-2xl">
                     <CardHeader className="text-lg font-bold tracking-wide text-gray-700 py-1">
                         HASIL PERTANDINGAN
                     </CardHeader>
                     <CardContent>
-                        <motion.div initial="hidden" animate="show" variants={tableVariants}>
-                            <Table className="min-w-full border-separate border-spacing-y-1.5">
-                                <TBody>
-                                    {matches.map((m, i) => (
-                                        <motion.tr
-                                            key={m.id ?? i}
-                                            className={`cursor-pointer rounded-lg ${getRowColor(m.status)}`}
-                                            custom={i}
-                                            variants={rowVariants}
-                                            initial="hidden"
-                                            animate="show"
-                                            whileHover="hover"
-                                        >
-                                            <TD>{i + 1}</TD>
-                                            <TD className="font-semibold">{m.homeTeam.name}</TD>
-                                            <TD className="text-center text-2xl font-bold">
-                                                <AnimatePresence mode="popLayout">
-                                                    <motion.span
-                                                        key={m.homeScore}
-                                                        initial={{ opacity: 0, y: -10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 10 }}
-                                                        transition={{ duration: 0.3 }}
-                                                        className="inline-block min-w-[1ch]" // biar stabil lebar
-                                                    >
-                                                        {m.homeScore ?? 0}
-                                                    </motion.span>
-                                                </AnimatePresence>
-                                                {" - "}
-                                                <AnimatePresence mode="popLayout">
-                                                    <motion.span
-                                                        key={m.awayScore}
-                                                        initial={{ opacity: 0, y: -10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 10 }}
-                                                        transition={{ duration: 0.3 }}
-                                                        className="inline-block min-w-[1ch]"
-                                                    >
-                                                        {m.awayScore ?? 0}
-                                                    </motion.span>
-                                                </AnimatePresence>
-                                            </TD>
+                        <div className="overflow-x-auto">
+                            <motion.div initial="hidden" animate="show" variants={tableVariants}>
+                                <Table className="min-w-full border-separate border-spacing-y-1.5">
+                                    <TBody>
+                                        {matches.map((m, i) => (
+                                            <motion.tr
+                                                key={m.id ?? i}
+                                                className={`cursor-pointer rounded-lg ${getRowColor(m.status)}`}
+                                                custom={i}
+                                                variants={rowVariants}
+                                                initial="hidden"
+                                                animate="show"
+                                                whileHover="hover"
+                                            >
+                                                <TD>{i + 1}</TD>
+                                                <TD className="font-semibold">{m.homeTeam.name}</TD>
+                                                <TD className="text-center text-md md:text-2xl font-bold">
+                                                    <div className="flex justify-center items-center gap-1 whitespace-nowrap">
+                                                        <AnimatePresence mode="popLayout">
+                                                            <motion.span
+                                                                key={m.homeScore}
+                                                                initial={{ opacity: 0, y: -10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                exit={{ opacity: 0, y: 10 }}
+                                                                transition={{ duration: 0.3 }}
+                                                                className="inline-block min-w-[1ch]"
+                                                            >
+                                                                {m.homeScore ?? 0}
+                                                            </motion.span>
+                                                        </AnimatePresence>
 
-                                            <TD className="font-semibold">{m.awayTeam.name}</TD>
-                                            <TD className="flex justify-center">
-                                                {getStatusBadge(m.status)}
-                                            </TD>
-                                        </motion.tr>
-                                    ))}
-                                </TBody>
-                            </Table>
-                        </motion.div>
+                                                        <span>-</span>
+
+                                                        <AnimatePresence mode="popLayout">
+                                                            <motion.span
+                                                                key={m.awayScore}
+                                                                initial={{ opacity: 0, y: -10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                exit={{ opacity: 0, y: 10 }}
+                                                                transition={{ duration: 0.3 }}
+                                                                className="inline-block min-w-[1ch]"
+                                                            >
+                                                                {m.awayScore ?? 0}
+                                                            </motion.span>
+                                                        </AnimatePresence>
+                                                    </div>
+                                                </TD>
+
+                                                <TD className="font-semibold">{m.awayTeam.name}</TD>
+                                                <TD className="flex justify-center">
+                                                    {getStatusBadge(m.status)}
+                                                </TD>
+                                            </motion.tr>
+                                        ))}
+                                    </TBody>
+                                </Table>
+                            </motion.div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
             {/* LIVE SCORE */}
-            <div className="col-span-12 lg:col-span-8">
+            <div className="col-span-12 lg:col-span-8 order-1 lg:order-2">
                 <Card className="w-full">
                     <CardHeader className="font-bold text-lg flex items-center space-x-2 rounded-lg">
                         <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs">
@@ -355,7 +361,7 @@ export default function PublicDashboard() {
                             }}
                         />
                     </CardHeader>
-                    <CardContent className="h-[475px] flex items-center justify-center relative overflow-hidden rounded-xl">
+                    <CardContent className="h-[300px] md:h-[555px] flex items-center justify-center relative overflow-hidden rounded-xl">
                         <motion.div
                             className="absolute inset-0"
                             style={{
@@ -383,7 +389,7 @@ export default function PublicDashboard() {
                                 liveMatches.map((m, i) => (
                                     <div
                                         key={m.id ?? i}
-                                        className="flex flex-col items-center text-white gap-4"
+                                        className="flex flex-col items-center justify-center text-black gap-4"
                                     >
                                         <div className="grid grid-cols-3 items-center w-full max-w-4xl">
                                             <div className="text-right text-2xl sm:text-4xl font-bold truncate px-2">
@@ -396,7 +402,7 @@ export default function PublicDashboard() {
                                                 {m.awayTeam.name}
                                             </div>
                                         </div>
-                                        <div className="text-6xl sm:text-9xl font-extrabold flex gap-6">
+                                        <div className="text-6xl md:text-[18rem] font-extrabold flex justify-center gap-6">
                                             <AnimatePresence mode="popLayout">
                                                 <motion.span
                                                     key={m.homeScore}
@@ -413,7 +419,7 @@ export default function PublicDashboard() {
                                                 </motion.span>
                                             </AnimatePresence>
 
-                                            <span>:</span>
+                                            <span>-</span>
 
                                             <AnimatePresence mode="popLayout">
                                                 <motion.span
@@ -441,29 +447,29 @@ export default function PublicDashboard() {
             </div>
 
             {/* KLASEMEN */}
-            <div className="col-span-12 md:col-span-12 flex flex-col gap-4">
+            <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
                 <Card className="w-full">
                     <CardHeader>KLASEMEN</CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
-                            <Table>
-                                <THead>
-                                    <TR>
-                                        <TH>No</TH>
-                                        <TH>TIM</TH>
-                                        <TH>P</TH>
-                                        <TH>W</TH>
-                                        <TH>D</TH>
-                                        <TH>L</TH>
-                                        <TH>GF</TH>
-                                        <TH>GA</TH>
-                                        <TH>GD</TH>
-                                        <TH>Pts</TH>
-                                        <TH>Last 5</TH>
+                            <Table className="min-w-full table-auto border border-gray-300">
+                                <THead className="bg-gray-100">
+                                    <TR className="border-b border-gray-300">
+                                        <TH className="border border-gray-300 px-2 py-1">No</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">TIM</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">P</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">W</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">D</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">L</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">GF</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">GA</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">GD</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">Pts</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">Last 5</TH>
                                     </TR>
                                 </THead>
                                 <LayoutGroup>
-                                    <TBody>
+                                    <TBody className="divide-y divide-gray-300">
                                         {Array.isArray(rows) &&
                                             rows.map((r, i) => (
                                                 <motion.tr
@@ -472,31 +478,33 @@ export default function PublicDashboard() {
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ duration: 0.4, delay: i * 0.05 }}
-                                                    className={i === 0 ? "bg-green-200 text-black font-bold" : "bg-white"}
+                                                    className={`${i === 0
+                                                        ? "bg-green-200 text-black font-semibold md:font-bold"
+                                                        : "bg-white"
+                                                        }`}
                                                 >
-                                                    <TD>{i + 1}</TD>
-                                                    <TD className="font-semibold">{r.teamName}</TD>
-                                                    <TD>{r.played}</TD>
-                                                    <TD>{r.win}</TD>
-                                                    <TD>{r.draw}</TD>
-                                                    <TD>{r.loss}</TD>
-                                                    <TD>{r.gf}</TD>
-                                                    <TD>{r.ga}</TD>
-                                                    <TD>{r.gd}</TD>
-                                                    <TD>{r.points}</TD>
-                                                    <TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{i + 1}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1 font-semibold">{r.teamName}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.played}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.win}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.draw}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.loss}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.gf}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.ga}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.gd}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">{r.points}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1">
                                                         <div className="flex gap-1 justify-center">
                                                             {(r.last5 ?? []).map((res, j) => (
                                                                 <span
                                                                     key={j}
-                                                                    className={`w-5 h-5 flex items-center justify-center text-xs rounded-full
-                                ${res === "W"
-                                                                            ? "bg-green-500 text-white"
-                                                                            : res === "D"
-                                                                                ? "bg-yellow-500 text-black"
-                                                                                : res === "L"
-                                                                                    ? "bg-red-500 text-white"
-                                                                                    : "bg-gray-300"
+                                                                    className={`w-5 h-5 flex items-center justify-center text-xs rounded-full ${res === "W"
+                                                                        ? "bg-green-500 text-white"
+                                                                        : res === "D"
+                                                                            ? "bg-yellow-500 text-black"
+                                                                            : res === "L"
+                                                                                ? "bg-red-500 text-white"
+                                                                                : "bg-gray-300"
                                                                         }`}
                                                                 >
                                                                     {res}
