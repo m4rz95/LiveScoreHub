@@ -46,14 +46,120 @@ export default function PublicDashboard() {
     const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([])
 
     async function loadStandings() {
-        const res = await fetch("/api/standings", { cache: "no-store" })
-        setRows(await res.json())
+        try {
+            // Ambil semua tim
+            const { data: teams, error: teamErr } = await supabase
+                .from("Team")
+                .select("*")
+                .order("name", { ascending: true })
+            if (teamErr) throw teamErr
+            if (!teams || teams.length === 0) {
+                setRows([])
+                return
+            }
+
+            // Ambil semua match yg udah dimainkan
+            const { data: match, error: matchErr } = await supabase
+                .from("Match")
+                .select("*")
+                .eq("played", true)
+                .order("id", { ascending: true })
+            if (matchErr) throw matchErr
+
+            // inisialisasi tabel
+            const table = new Map<number, Row>()
+            for (const t of teams) {
+                table.set(t.id, {
+                    teamId: t.id,
+                    teamName: t.name,
+                    played: 0,
+                    win: 0,
+                    draw: 0,
+                    loss: 0,
+                    gf: 0,
+                    ga: 0,
+                    gd: 0,
+                    points: 0,
+                    last5: []
+                })
+            }
+
+            // proses semua match
+            for (const m of match ?? []) {
+                const hs = m.homeScore ?? 0
+                const as = m.awayScore ?? 0
+                const home = table.get(m.homeTeamId)
+                const away = table.get(m.awayTeamId)
+                if (!home || !away) continue
+
+                home.played++
+                away.played++
+                home.gf += hs
+                home.ga += as
+                home.gd = home.gf - home.ga
+                away.gf += as
+                away.ga += hs
+                away.gd = away.gf - away.ga
+
+                if (hs > as) {
+                    home.win++; home.points += 3; away.loss++
+                    home.last5.push("W"); away.last5.push("L")
+                } else if (hs < as) {
+                    away.win++; away.points += 3; home.loss++
+                    away.last5.push("W"); home.last5.push("L")
+                } else {
+                    home.draw++; away.draw++
+                    home.points++; away.points++
+                    home.last5.push("D"); away.last5.push("D")
+                }
+
+                home.last5 = home.last5.slice(-5)
+                away.last5 = away.last5.slice(-5)
+            }
+
+            // urutkan klasemen
+            const sortedRows = Array.from(table.values()).sort((a, b) =>
+                b.points - a.points ||
+                b.gd - a.gd ||
+                b.gf - a.gf ||
+                a.teamName.localeCompare(b.teamName)
+            )
+
+            setRows(sortedRows)
+        } catch (err) {
+            console.error("Error fetching standings:", err)
+            setRows([])
+        }
     }
 
     async function loadMatches() {
-        const res = await fetch("/api/matches", { cache: "no-store" })
-        const data: Match[] = await res.json()
-        updateMatches(data)
+        try {
+            const { data, error } = await supabase
+                .from("Match")
+                .select(`
+          id,
+          matchDate,
+          homeScore,
+          awayScore,
+          played,
+          status,
+          homeTeam:homeTeamId ( id, name ),
+          awayTeam:awayTeamId ( id, name )
+        `)
+                .order("matchDate", { ascending: true })
+                .order("id", { ascending: true });
+
+            if (error) throw error;
+
+            const mapped = data?.map(m => ({
+                ...m,
+                homeTeam: Array.isArray(m.homeTeam) ? m.homeTeam[0] ?? { id: 0, name: 'Unknown' } : m.homeTeam,
+                awayTeam: Array.isArray(m.awayTeam) ? m.awayTeam[0] ?? { id: 0, name: 'Unknown' } : m.awayTeam,
+            })) ?? []
+            updateMatches(mapped)
+        } catch (err) {
+            console.error("Gagal load matches:", err)
+        }
     }
 
     // helper buat filter live matches
