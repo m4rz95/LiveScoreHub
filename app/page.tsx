@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table"
 import { easeOut, motion, Variants } from "framer-motion"
@@ -15,6 +15,7 @@ type Match = {
     played?: boolean
     status?: "scheduled" | "live" | "finished"
     minute?: number
+    matchDate?: string
 }
 
 type Row = {
@@ -214,19 +215,19 @@ export default function PublicDashboard() {
             case "live":
                 return (
                     <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs">
-                        LIVE
+                        live
                     </span>
                 )
             case "finished":
                 return (
                     <span className="px-2 py-1 bg-green-500 text-white rounded-full text-xs">
-                        FINISHED
+                        finished
                     </span>
                 )
             default:
                 return (
-                    <span className="px-2 py-1 bg-gray-300 text-black rounded-full text-xs">
-                        SCHEDULED
+                    <span className="px-2 bg-gray-300 text-black rounded-full text-xs">
+                        scheduled
                     </span>
                 )
         }
@@ -278,66 +279,94 @@ export default function PublicDashboard() {
             {/* HASIL PERTANDINGAN */}
             <div className="col-span-12 lg:col-span-4 order-2 lg:order-1">
                 <Card className="w-full shadow-xl rounded-2xl">
-                    <CardHeader className="text-lg font-bold tracking-wide text-gray-700 py-1">
+                    <CardHeader className="text-lg font-bold tracking-wide text-gray-700 py-1 pb-5">
                         HASIL PERTANDINGAN
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
                             <motion.div initial="hidden" animate="show" variants={tableVariants}>
-                                <Table className="min-w-full border-separate border-spacing-y-1.5">
+                                <Table className="min-w-full border-separate border-spacing-y-3">
                                     <TBody>
                                         {matches.map((m, i) => (
-                                            <motion.tr
-                                                key={m.id ?? i}
-                                                className={`cursor-pointer rounded-lg ${getRowColor(m.status)}`}
-                                                custom={i}
-                                                variants={rowVariants}
-                                                initial="hidden"
-                                                animate="show"
-                                                whileHover="hover"
-                                            >
-                                                <TD>{i + 1}</TD>
-                                                <TD className="font-semibold">{m.homeTeam.name}</TD>
-                                                <TD className="text-center text-md md:text-2xl font-bold">
-                                                    <div className="flex justify-center items-center gap-1 whitespace-nowrap">
-                                                        <AnimatePresence mode="popLayout">
-                                                            <motion.span
-                                                                key={m.homeScore}
-                                                                initial={{ opacity: 0, y: -10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                exit={{ opacity: 0, y: 10 }}
-                                                                transition={{ duration: 0.3 }}
-                                                                className="inline-block min-w-[1ch]"
-                                                            >
-                                                                {m.homeScore ?? 0}
-                                                            </motion.span>
-                                                        </AnimatePresence>
+                                            <React.Fragment key={m.id ?? i}>
+                                                <motion.tr
+                                                    key={m.id ?? i}
+                                                    className={`cursor-pointer rounded-lg ${getRowColor(m.status)}`}
+                                                    custom={i}
+                                                    variants={rowVariants}
+                                                    initial="hidden"
+                                                    animate="show"
+                                                    whileHover="hover"
+                                                >
+                                                    {/* <TD className="text-xs font-bold">{i + 1}</TD> */}
 
-                                                        <span>-</span>
+                                                    {/* Home team */}
+                                                    <TD className="text-md font-bold">{m.homeTeam.name}</TD>
 
-                                                        <AnimatePresence mode="popLayout">
-                                                            <motion.span
-                                                                key={m.awayScore}
-                                                                initial={{ opacity: 0, y: -10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                exit={{ opacity: 0, y: 10 }}
-                                                                transition={{ duration: 0.3 }}
-                                                                className="inline-block min-w-[1ch]"
-                                                            >
-                                                                {m.awayScore ?? 0}
-                                                            </motion.span>
-                                                        </AnimatePresence>
-                                                    </div>
-                                                </TD>
+                                                    {/* Score + matchDate di bawah */}
+                                                    <TD className="text-center text-md md:text-lg font-bold">
+                                                        <div className="flex flex-col justify-center items-center py-2 whitespace-nowrap">
+                                                            {/* skor */}
+                                                            <div className="flex items-center gap-5">
+                                                                <AnimatePresence mode="popLayout">
+                                                                    <motion.span
+                                                                        key={m.homeScore}
+                                                                        initial={{ opacity: 0, y: -10 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: 10 }}
+                                                                        transition={{ duration: 0.3 }}
+                                                                        className="inline-block min-w-[1ch]"
+                                                                    >
+                                                                        {m.homeScore ?? 0}
+                                                                    </motion.span>
+                                                                </AnimatePresence>
+                                                                <span>-</span>
+                                                                <AnimatePresence mode="popLayout">
+                                                                    <motion.span
+                                                                        key={m.awayScore}
+                                                                        initial={{ opacity: 0, y: -10 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: 10 }}
+                                                                        transition={{ duration: 0.3 }}
+                                                                        className="inline-block min-w-[1ch]"
+                                                                    >
+                                                                        {m.awayScore ?? 0}
+                                                                    </motion.span>
+                                                                </AnimatePresence>
+                                                            </div>
 
-                                                <TD className="font-semibold">{m.awayTeam.name}</TD>
-                                                <TD className="flex justify-center">
-                                                    {getStatusBadge(m.status)}
-                                                </TD>
-                                            </motion.tr>
+                                                            {/* tanggal */}
+                                                            <div className="text-sm italic text-gray-700 whitespace-nowrap pt-1">
+                                                                {m.matchDate
+                                                                    ? new Date(m.matchDate).toLocaleDateString("id-ID", {
+                                                                        day: "2-digit",
+                                                                        month: "2-digit",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                        second: "2-digit",
+                                                                        hour12: false,
+                                                                    }).replace(/\./g, ":")
+                                                                    : "-"} {getStatusBadge(m.status)}
+                                                            </div>
+                                                        </div>
+                                                    </TD>
+
+                                                    {/* Away team */}
+                                                    <TD className="text-md font-bold">{m.awayTeam.name}</TD>
+
+                                                    {/* Status */}
+                                                    {/* <TD className="text-center align-middle">
+                                                        {getStatusBadge(m.status)}
+                                                    </TD> */}
+
+                                                </motion.tr>
+
+                                            </React.Fragment>
                                         ))}
                                     </TBody>
                                 </Table>
+
                             </motion.div>
                         </div>
                     </CardContent>
@@ -444,11 +473,8 @@ export default function PublicDashboard() {
                         </motion.div>
                     </CardContent>
                 </Card>
-            </div>
 
-            {/* KLASEMEN */}
-            <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
-                <Card className="w-full">
+                <Card className="w-full mt-5">
                     <CardHeader>KLASEMEN</CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
@@ -521,6 +547,11 @@ export default function PublicDashboard() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* KLASEMEN */}
+            {/* <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
+
+            </div> */}
         </div >
     )
 }

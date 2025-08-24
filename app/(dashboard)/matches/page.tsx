@@ -15,6 +15,7 @@ type Match = {
   awayTeam: Team;
   homeScore?: number | null;
   awayScore?: number | null;
+  matchDate?: string;
   status?: 'scheduled' | 'live' | 'finished';
   played?: boolean;
 }
@@ -23,6 +24,7 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<Match[]>([])
   const [preview, setPreview] = useState<Match[]>([])
   const [loading, setLoading] = useState<number | null>(null)
+  const [generating, setGenerating] = useState(false)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMatch, setDialogMatch] = useState<Match | null>(null)
@@ -45,7 +47,6 @@ export default function MatchesPage() {
           homeTeam:homeTeamId ( id, name ),
           awayTeam:awayTeamId ( id, name )
         `)
-        .order("matchDate", { ascending: true })
         .order("id", { ascending: true });
 
       if (error) throw error;
@@ -72,10 +73,23 @@ export default function MatchesPage() {
   // Generate preview animasi
   async function generate() {
     try {
+      setGenerating(true)
       const res = await fetch('/api/matches/generate', { method: 'POST' })
       if (!res.ok) throw new Error(await res.text())
+      // slot waktu fix
+      const times = [
+        "13:00:00", "13:25:00", "13:50:00", "14:15:00", "14:40:00",
+        "15:05:00", "15:30:00", "15:55:00", "16:20:00", "16:45:00"
+      ]
+      const date = "2025-08-29"
+      const matchDates = times.map(t => new Date(`${date}T${t}`).toISOString())
 
       const finalMatches: Match[] = await res.json()
+      // suntikkan matchDate ke setiap match
+      finalMatches.forEach((m, i) => {
+        m.matchDate = matchDates[i] ?? new Date().toISOString()
+      })
+
       const tempMatches = finalMatches.map(m => ({ ...m }))
       const teamNames = Array.from(new Set(finalMatches.flatMap(m => [m.homeTeam.name, m.awayTeam.name])))
 
@@ -101,6 +115,7 @@ export default function MatchesPage() {
             ...m,
             homeTeam: { ...m.homeTeam, name: randomHome },
             awayTeam: { ...m.awayTeam, name: randomAway },
+            matchDate: m.matchDate,
           }
           setPreview([...previewCopy])
           lastHome = randomHome
@@ -116,19 +131,14 @@ export default function MatchesPage() {
     } catch (err: any) {
       console.error(err)
       toast.error("Gagal generate match preview")
+    } finally {
+      setGenerating(false)
     }
   }
 
   // Save preview ke database
   const save = async () => {
     try {
-      const times = [
-        "13:00 - 13:25", "13:25 - 13:50", "13:50 - 14:15", "14:15 - 14:40", "14:40 - 15:05",
-        "15:05 - 15:30", "15:30 - 15:55", "15:55 - 16:20", "16:20 - 16:45", "16:45 - 17:10"
-      ]
-      const date = "2025-08-29"
-      const matchDates = times.map(t => new Date(`${date}T${t.split(" - ")[0]}:00`).toISOString())
-
       const rows = preview.map((m, i) => ({
         homeTeamId: m.homeTeam.id,
         awayTeamId: m.awayTeam.id,
@@ -136,11 +146,13 @@ export default function MatchesPage() {
         awayScore: m.awayScore ?? 0,
         played: m.played ?? false,
         status: m.status ?? 'scheduled',
-        matchDate: matchDates[i] ?? new Date().toISOString(),
+        matchDate: m.matchDate
+          ? new Date(m.matchDate).toLocaleString("sv-SE").replace(" ", "T")
+          : null,
         updatedAt: new Date().toISOString()
       }))
 
-      const { data, error } = await supabase.from('Match').insert(rows).select()
+      const { error } = await supabase.from('Match').insert(rows).select()
       if (error) throw error
 
       setPreview([])
@@ -192,8 +204,14 @@ export default function MatchesPage() {
           <div className="flex items-center justify-between gap-2">
             <div>PERTANDINGAN</div>
             <div className="flex gap-2">
-              <Button className="px-4 py-1 text-md rounded" onClick={generate}>Acak</Button>
-              {preview.length > 0 && <Button onClick={save}>Simpan</Button>}
+              <Button
+                className="px-4 py-1 text-md rounded"
+                onClick={generate}
+                disabled={generating}
+              >
+                {generating ? "Memproses..." : "Acak"}
+              </Button>
+              {preview.length > 0 && <Button onClick={save} hidden={generating}>Simpan</Button>}
             </div>
           </div>
         </CardHeader>
@@ -203,38 +221,57 @@ export default function MatchesPage() {
               <THead>
                 <TR>
                   <TH>#</TH>
-                  <TH>Home</TH>
-                  <TH>Score</TH>
-                  <TH>Away</TH>
-                  <TH>Status</TH>
-                  <TH>Aksi</TH>
+                  <TH>TIM</TH>
+                  <TH>SKOR</TH>
+                  <TH>TIM</TH>
+                  <TH>TANGGAL</TH>
+                  <TH>STATUS</TH>
+                  <TH>AKSI</TH>
                 </TR>
               </THead>
               <TBody>
-                {list.map((m, i) => (
-                  <motion.tr
-                    key={m.id ?? `${m.homeTeam.id}-${m.awayTeam.id}`}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`${getRowColor(m.status)} cursor-pointer`}
-                    onClick={() => {
-                      if (!m.id) return
-                      setDialogMatch(m)
-                      setDialogHS(m.homeScore ?? 0)
-                      setDialogAS(m.awayScore ?? 0)
-                      setDialogStatus(m.status ?? 'scheduled')
-                      setDialogOpen(true)
-                    }}
-                  >
-                    <TD>{i + 1}</TD>
-                    <TD>{m.homeTeam.name}</TD>
-                    <TD>{m.homeScore ?? 0} - {m.awayScore ?? 0}</TD>
-                    <TD>{m.awayTeam.name}</TD>
-                    <TD>{m.status}</TD>
-                    <TD>{m.id ? <span className="text-gray-500">Klik baris untuk update</span> : <span className="text-gray-400">Belum tersimpan</span>}</TD>
-                  </motion.tr>
-                ))}
+                {list.map((m, i) => {
+                  const isScheduled = !m.status || m.status === "scheduled"
+                  const striping = i % 2 === 0 ? "bg-yellow-100" : "bg-white"
+                  const rowColor = isScheduled ? striping : getRowColor(m.status)
+
+                  return (
+                    <motion.tr
+                      key={m.id ?? `${m.homeTeam.id}-${m.awayTeam.id}`}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className={`${rowColor} cursor-pointer`}
+                      onClick={() => {
+                        if (!m.id) return
+                        setDialogMatch(m)
+                        setDialogHS(m.homeScore ?? 0)
+                        setDialogAS(m.awayScore ?? 0)
+                        setDialogStatus(m.status ?? 'scheduled')
+                        setDialogOpen(true)
+                      }}
+                    >
+                      <TD className='font-bold'>{i + 1}</TD>
+                      <TD className='font-bold'>{m.homeTeam.name}</TD>
+                      <TD className='font-bold'>{m.homeScore ?? 0} - {m.awayScore ?? 0}</TD>
+                      <TD className='font-bold'>{m.awayTeam.name}</TD>
+                      <TD className='font-bold'>
+                        {m.matchDate
+                          ? `${new Date(m.matchDate).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })} ${new Date(m.matchDate).toLocaleTimeString("en-GB", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}`
+                          : "-"}
+                      </TD>
+                      <TD>{m.status ?? 'scheduled'}</TD>
+                      <TD>{m.id ? <span className="text-gray-500">Klik baris untuk update</span> : <span className="text-gray-400">Belum tersimpan</span>}</TD>
+                    </motion.tr>
+                  )
+                })}
               </TBody>
             </Table>
           </div>

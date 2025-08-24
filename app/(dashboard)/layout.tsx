@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen flex flex-col">
       <Toaster position="top-right" />
       <Nav />
-      <main className="flex-1 p-2 md:p-4 max-w-6xl mx-auto w-full">
+      <main className="flex-1 p-2 md:p-4 max-w-7xl mx-auto w-full">
         {children}
       </main>
     </div>
