@@ -1,6 +1,7 @@
 // src/app/api/matches/generate/route.ts
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabaseClient";
+export const dynamic = "force-dynamic"
 
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -66,5 +67,5 @@ export async function POST() {
     awayTeam: teams.find((t) => t.id === p.awayTeamId),
   }))
 
-  return NextResponse.json(results)
+  return NextResponse.json(results, { headers: { "Cache-Control": "no-store, max-age=0" } })
 }

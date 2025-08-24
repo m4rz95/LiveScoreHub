@@ -1,13 +1,12 @@
 // app/api/standings/route.ts
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-
+export const dynamic = "force-dynamic"
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
-export const dynamic = "force-dynamic"
+)
 
 export async function GET() {
   try {
@@ -101,7 +100,7 @@ export async function GET() {
     console.error("Error fetching standings:", err)
     return NextResponse.json(
       { error: "Failed to fetch standings" },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "no-store, max-age=0" } }
     )
   }
 }

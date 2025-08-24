@@ -1,6 +1,7 @@
 // app/api/matches/[id]/route.ts
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+export const dynamic = "force-dynamic"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +25,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   if (error) {
     console.error("Error updating match:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500, headers: { "Cache-Control": "no-store, max-age=0" } })
   }
 
   return NextResponse.json(data?.[0] ?? {})

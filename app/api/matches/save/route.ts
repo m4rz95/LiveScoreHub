@@ -1,6 +1,7 @@
 // src/app/api/matches/save/route.ts
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+export const dynamic = "force-dynamic"
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,6 +33,6 @@ export async function POST(req: Request) {
         return NextResponse.json(data, { status: 201 })
     } catch (err) {
         console.error("Save error:", err)
-        return NextResponse.json({ error: "Gagal simpan ke DB" }, { status: 500 })
+        return NextResponse.json({ error: "Gagal simpan ke DB" }, { status: 500, headers: { "Cache-Control": "no-store, max-age=0" } })
     }
 }
