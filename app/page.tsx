@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table"
 import { easeOut, motion, Variants } from "framer-motion"
@@ -41,10 +41,20 @@ type LiveMatch = {
     minute: number
 }
 
+type Message = {
+    id?: number
+    username: string
+    message: string
+    created_at: string
+}
+
 export default function PublicDashboard() {
     const [rows, setRows] = useState<Row[]>([])
     const [matches, setMatches] = useState<Match[]>([])
     const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([])
+    const [messages, setMessages] = useState<Message[]>([])
+    const [userColors, setUserColors] = useState<Record<string, string>>({})
+
 
     async function loadStandings() {
         try {
@@ -274,12 +284,68 @@ export default function PublicDashboard() {
         },
     }
 
+    // 🔹 Warna random untuk setiap user
+    const COLORS = [
+        "bg-red-500", "bg-green-500", "bg-blue-500",
+        "bg-yellow-500", "bg-purple-500", "bg-pink-500",
+        "bg-indigo-500", "bg-teal-500", "bg-orange-500"
+    ]
+
+    const getRandomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)]
+    useEffect(() => {
+        const fetchMessages = async () => {
+            const { data, error } = await supabase
+                .from("Chat")
+                .select("*")
+                .order("created_at", { ascending: true })
+
+            if (error) console.error(error)
+            else if (data) {
+                setMessages(data)
+
+                // assign warna ke setiap user
+                const colorMap: Record<string, string> = {}
+                data.forEach(msg => {
+                    if (!colorMap[msg.user]) {
+                        colorMap[msg.user] = getRandomColor()
+                    }
+                })
+                setUserColors(colorMap)
+            }
+        }
+
+        fetchMessages()
+
+        // 🔹 Supabase realtime
+        const channel = supabase
+            .channel("chat-realtime")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "Chat" },
+                payload => {
+                    const newMsg = payload.new as Message
+                    setMessages(prev => [...prev, newMsg])
+
+                    // assign warna kalau user baru
+                    setUserColors(prev => ({
+                        ...prev,
+                        [newMsg.username]: prev[newMsg.username] || getRandomColor()
+                    }))
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [])
+
     return (
         <div className="p-4 grid grid-cols-12 gap-4">
             {/* HASIL PERTANDINGAN */}
             <div className="col-span-12 lg:col-span-4 order-2 lg:order-1">
                 <Card className="w-full shadow-xl rounded-2xl">
-                    <CardHeader className="text-lg font-bold tracking-wide text-gray-700 py-1 pb-5">
+                    <CardHeader className="text-lg font-bold tracking-wide text-gray-700 py-1">
                         HASIL PERTANDINGAN
                     </CardHeader>
                     <CardContent>
@@ -301,7 +367,7 @@ export default function PublicDashboard() {
                                                     {/* <TD className="text-xs font-bold">{i + 1}</TD> */}
 
                                                     {/* Home team */}
-                                                    <TD className="text-md font-bold">{m.homeTeam.name}</TD>
+                                                    <TD className="text-md font-bold whitespace-nowrap px-5">{m.homeTeam.name}</TD>
 
                                                     {/* Score + matchDate di bawah */}
                                                     <TD className="text-center text-md md:text-lg font-bold">
@@ -353,7 +419,7 @@ export default function PublicDashboard() {
                                                     </TD>
 
                                                     {/* Away team */}
-                                                    <TD className="text-md font-bold">{m.awayTeam.name}</TD>
+                                                    <TD className="text-md font-bold whitespace-nowrap px-5">{m.awayTeam.name}</TD>
 
                                                     {/* Status */}
                                                     {/* <TD className="text-center align-middle">
@@ -390,7 +456,23 @@ export default function PublicDashboard() {
                             }}
                         />
                     </CardHeader>
-                    <CardContent className="h-[300px] md:h-[555px] flex items-center justify-center relative overflow-hidden rounded-xl">
+                    <CardContent className="h-[300px] md:h-[510px] flex items-center justify-center relative overflow-hidden rounded-xl">
+                        <div className="absolute top-4 left-4 z-20">
+                            <motion.img
+                                src="/icon/logo.png"
+                                alt="Logo"
+                                className="w-12 h-12 sm:w-16 sm:h-16"
+                                animate={{ rotateY: [0, 180, 360] }}
+                                transition={{
+                                    repeat: Infinity,
+                                    duration: 4,
+                                    ease: "linear"
+                                }}
+                                style={{
+                                    transformStyle: "preserve-3d",
+                                }}
+                            />
+                        </div>
                         <motion.div
                             className="absolute inset-0"
                             style={{
@@ -405,7 +487,7 @@ export default function PublicDashboard() {
                             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
                         />
                         <motion.div
-                            className="relative z-10 w-full sm:m-24 sm:px-6 sm:py-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center"
+                            className="relative z-10 w-full sm:m-24 sm:px-6 sm:py-10 rounded-2xl lg:bg-white/10 lg:backdrop-blur-md lg:border lg:border-white/20 text-center"
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -424,14 +506,14 @@ export default function PublicDashboard() {
                                             <div className="text-right text-2xl sm:text-4xl font-bold truncate px-2">
                                                 {m.homeTeam.name}
                                             </div>
-                                            <div className="text-center text-xl sm:text-2xl font-semibold">
+                                            <div className="text-center text-2xl sm:text-6xl font-bold">
                                                 vs
                                             </div>
                                             <div className="text-left text-2xl sm:text-4xl font-bold truncate px-2">
                                                 {m.awayTeam.name}
                                             </div>
                                         </div>
-                                        <div className="text-6xl md:text-[18rem] font-extrabold flex justify-center gap-6">
+                                        <div className="text-6xl md:text-[18rem] font-extrabold flex justify-center items-center gap-8">
                                             <AnimatePresence mode="popLayout">
                                                 <motion.span
                                                     key={m.homeScore}
@@ -441,7 +523,7 @@ export default function PublicDashboard() {
                                                     transition={{ duration: 0.5, ease: "easeInOut" }}
                                                     style={{
                                                         display: "inline-block",
-                                                        transformOrigin: "center bottom", // biar efek flip ke atas
+                                                        transformOrigin: "center bottom",
                                                     }}
                                                 >
                                                     {m.homeScore}
@@ -472,6 +554,32 @@ export default function PublicDashboard() {
                             )}
                         </motion.div>
                     </CardContent>
+                    <motion.div
+                        className="w-full text-center pt-2 text-gray-800 text-xs sm:text-sm flex justify-center gap-1 flex-wrap font-semibold"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            visible: {
+                                transition: {
+                                    staggerChildren: 0.3,
+                                },
+                            },
+                        }}
+                    >
+                        {"Powered by © 2025 MarDev.".split(" ").map((word, i) => (
+                            <motion.span
+                                key={i}
+                                className="inline-block"
+                                variants={{
+                                    hidden: { opacity: 0, x: -20, filter: "blur(4px)" },
+                                    visible: { opacity: 1, x: 0, filter: "blur(0px)" },
+                                }}
+                                transition={{ duration: 0.6, ease: "easeOut" }}
+                            >
+                                {word}
+                            </motion.span>
+                        ))}
+                    </motion.div>
                 </Card>
 
                 <Card className="w-full mt-5">
@@ -548,10 +656,37 @@ export default function PublicDashboard() {
                 </Card>
             </div>
 
-            {/* KLASEMEN */}
-            {/* <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
-
-            </div> */}
+            <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
+                {/* MARQUEE CHAT STYLE */}
+                <div className="w-full overflow-hidden relative bg-gray-900/30 backdrop-blur-sm rounded-lg py-2">
+                    <motion.div
+                        className="flex whitespace-nowrap gap-4"
+                        animate={{ x: ["100%", "-100%"] }}
+                        transition={{
+                            x: {
+                                repeat: Infinity,
+                                repeatType: "loop",
+                                duration: 100,
+                                ease: "linear",
+                            },
+                        }}
+                    >
+                        {[...messages].map((msg, idx) => (
+                            <div
+                                key={idx}
+                                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow-md"
+                            >
+                                <div
+                                    className={`${userColors[msg.username] || "bg-gray-400"} w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ring-1 ring-white/50 shadow-sm`}
+                                >
+                                    {msg.username[0].toUpperCase()}
+                                </div>
+                                <span className="text-white font-medium text-sm">{msg.username} :</span> <span className="text-white font-medium text-sm">{msg.message}</span>
+                            </div>
+                        ))}
+                    </motion.div>
+                </div>
+            </div>
         </div >
     )
 }

@@ -36,6 +36,7 @@ export default function Nav() {
           {link("/teams", "TIM")}
           {link("/matches", "PERTANDINGAN")}
           {link("/standings", "KLASEMEN")}
+          {link("/message", "PESAN")}
           <Logout />
         </div>
 

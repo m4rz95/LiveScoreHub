@@ -251,7 +251,7 @@ export default function MatchesPage() {
                         setDialogOpen(true)
                       }}
                     >
-                      <TD className='font-bold'>{i + 1}</TD>
+                      <TD className='font-bold py-4'>{i + 1}</TD>
                       <TD className='font-bold'>{m.homeTeam.name}</TD>
                       <TD className='font-bold'>{m.homeScore ?? 0} - {m.awayScore ?? 0}</TD>
                       <TD className='font-bold'>{m.awayTeam.name}</TD>
