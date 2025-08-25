@@ -322,18 +322,33 @@ export default function PublicDashboard() {
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "Chat" },
-                payload => {
-                    const newMsg = payload.new as Message
-                    setMessages(prev => [...prev, newMsg])
+                (payload) => {
+                    if (payload.eventType === "INSERT") {
+                        const newMsg = payload.new as Message
+                        setMessages(prev => [...prev, newMsg])
+                        setUserColors(prev => ({
+                            ...prev,
+                            [newMsg.username]: prev[newMsg.username] || getRandomColor()
+                        }))
+                    }
 
-                    // assign warna kalau user baru
-                    setUserColors(prev => ({
-                        ...prev,
-                        [newMsg.username]: prev[newMsg.username] || getRandomColor()
-                    }))
+                    if (payload.eventType === "UPDATE") {
+                        const updatedMsg = payload.new as Message
+                        setMessages(prev =>
+                            prev.map(m => (m.id === updatedMsg.id ? updatedMsg : m))
+                        )
+                    }
+
+                    if (payload.eventType === "DELETE") {
+                        const deletedId = payload.old.id
+                        setMessages(prev =>
+                            prev.filter(m => m.id !== deletedId)
+                        )
+                    }
                 }
             )
             .subscribe()
+
 
         return () => {
             supabase.removeChannel(channel)
