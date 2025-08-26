@@ -19,41 +19,17 @@ body {
 }
 
 .marquee-container {
-  width: 100%;
-  overflow: hidden;
-  background: rgba(31, 41, 55, 0.3);
-  backdrop-filter: blur(5px);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0;
   position: relative;
+  overflow: hidden;
+  width: 100%;
 }
 
 .marquee {
-  display: flex;
+  display: inline-flex;
   gap: 1rem;
   white-space: nowrap;
   animation: marquee 40s linear infinite;
 }
-
-/* Keyframes marquee */
-@keyframes marquee {
-  0% {
-    transform: translateX(100%);
-    /* mulai dari luar kanan */
-  }
-
-  85% {
-    transform: translateX(-100%);
-    /* geser sampai ujung kiri */
-  }
-
-  90%,
-  100% {
-    transform: translateX(-120%);
-    /* geser lebih jauh biar teks terakhir hilang total */
-  }
-}
-
 
 .marquee-item {
   display: flex;
@@ -80,10 +56,30 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* teks */
+/* username & message */
 .username,
 .message {
   color: white;
   font-weight: 500;
   font-size: 0.875rem;
+}
+
+/* keyframes */
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+    /* mulai dari kanan */
+  }
+
+  100% {
+    transform: translateX(-100%);
+    /* habis ke kiri */
+  }
+}
+
+/* Speed lebih cepat di mobile */
+@media (max-width: 768px) {
+  .marquee {
+    animation-duration: 12s;
+  }
 }
