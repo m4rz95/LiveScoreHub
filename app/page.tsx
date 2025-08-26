@@ -354,7 +354,18 @@ export default function PublicDashboard() {
             supabase.removeChannel(channel)
         }
     }, [])
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [distance, setDistance] = useState(0)
 
+    useEffect(() => {
+        if (containerRef.current) {
+            setDistance(containerRef.current.scrollWidth)
+        }
+    }, [messages])
+
+    // speed dalam px/detik
+    const SPEED = 60
+    const duration = distance / SPEED
     return (
         <div className="p-4 grid grid-cols-12 gap-4">
             {/* HASIL PERTANDINGAN */}
@@ -675,18 +686,19 @@ export default function PublicDashboard() {
                 {/* MARQUEE CHAT STYLE */}
                 <div className="w-full overflow-hidden relative bg-gray-900/30 backdrop-blur-sm rounded-lg py-2">
                     <motion.div
+                        ref={containerRef}
                         className="flex whitespace-nowrap gap-4"
-                        animate={{ x: ["100%", "-100%"] }}
+                        animate={{ x: ["100%", `-${distance}px`] }}
                         transition={{
                             x: {
                                 repeat: Infinity,
                                 repeatType: "loop",
-                                duration: 100,
+                                duration,
                                 ease: "linear",
                             },
                         }}
                     >
-                        {[...messages].map((msg, idx) => (
+                        {messages.map((msg, idx) => (
                             <div
                                 key={idx}
                                 className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow-md"
@@ -696,10 +708,12 @@ export default function PublicDashboard() {
                                 >
                                     {msg.username[0].toUpperCase()}
                                 </div>
-                                <span className="text-white font-medium text-sm">{msg.username} :</span> <span className="text-white font-medium text-sm">{msg.message}</span>
+                                <span className="text-white font-medium text-sm">{msg.username} :</span>
+                                <span className="text-white font-medium text-sm">{msg.message}</span>
                             </div>
                         ))}
                     </motion.div>
+
                 </div>
             </div>
         </div >
