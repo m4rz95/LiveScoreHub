@@ -154,35 +154,37 @@ export default function ChatPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <THead>
-                            <TR>
-                                <TH>Username</TH>
-                                <TH>Message</TH>
-                                <TH>Aksi</TH>
-                            </TR>
-                        </THead>
-                        <TBody className="bg-white">
-                            {messages.map((msg) => (
-                                <TR key={msg.id}>
-                                    <TD>{msg.username}</TD>
-                                    <TD>{msg.message}</TD>
-                                    <TD className="space-x-2">
-                                        <Button
-                                            onClick={() => {
-                                                setEditingMessage(msg)
-                                                setEditUsername(msg.username)
-                                                setEditMessage(msg.message)
-                                            }}
-                                        >
-                                            Edit
-                                        </Button>
-                                        <Button onClick={() => setDeletingMessage(msg)}>Hapus</Button>
-                                    </TD>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <THead>
+                                <TR>
+                                    <TH>Username</TH>
+                                    <TH>Message</TH>
+                                    <TH>Aksi</TH>
                                 </TR>
-                            ))}
-                        </TBody>
-                    </Table>
+                            </THead>
+                            <TBody className="bg-white">
+                                {messages.map((msg) => (
+                                    <TR key={msg.id}>
+                                        <TD>{msg.username}</TD>
+                                        <TD>{msg.message}</TD>
+                                        <TD className="space-x-2">
+                                            <Button
+                                                onClick={() => {
+                                                    setEditingMessage(msg)
+                                                    setEditUsername(msg.username)
+                                                    setEditMessage(msg.message)
+                                                }}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button onClick={() => setDeletingMessage(msg)}>Hapus</Button>
+                                        </TD>
+                                    </TR>
+                                ))}
+                            </TBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

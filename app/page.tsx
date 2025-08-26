@@ -306,8 +306,8 @@ export default function PublicDashboard() {
                 // assign warna ke setiap user
                 const colorMap: Record<string, string> = {}
                 data.forEach(msg => {
-                    if (!colorMap[msg.user]) {
-                        colorMap[msg.user] = getRandomColor()
+                    if (!colorMap[msg.username]) {
+                        colorMap[msg.username] = getRandomColor()
                     }
                 })
                 setUserColors(colorMap)
@@ -354,18 +354,6 @@ export default function PublicDashboard() {
             supabase.removeChannel(channel)
         }
     }, [])
-    const containerRef = useRef<HTMLDivElement>(null)
-    const [distance, setDistance] = useState(0)
-
-    useEffect(() => {
-        if (containerRef.current) {
-            setDistance(containerRef.current.scrollWidth)
-        }
-    }, [messages])
-
-    // speed dalam px/detik
-    const SPEED = 60
-    const duration = distance / SPEED
     return (
         <div className="p-4 grid grid-cols-12 gap-4">
             {/* HASIL PERTANDINGAN */}
@@ -685,35 +673,19 @@ export default function PublicDashboard() {
             <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
                 {/* MARQUEE CHAT STYLE */}
                 <div className="w-full overflow-hidden relative bg-gray-900/30 backdrop-blur-sm rounded-lg py-2">
-                    <motion.div
-                        ref={containerRef}
-                        className="flex whitespace-nowrap gap-4"
-                        animate={{ x: ["100%", `-${distance}px`] }}
-                        transition={{
-                            x: {
-                                repeat: Infinity,
-                                repeatType: "loop",
-                                duration,
-                                ease: "linear",
-                            },
-                        }}
-                    >
-                        {messages.map((msg, idx) => (
-                            <div
-                                key={idx}
-                                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow-md"
-                            >
-                                <div
-                                    className={`${userColors[msg.username] || "bg-gray-400"} w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ring-1 ring-white/50 shadow-sm`}
-                                >
-                                    {msg.username[0].toUpperCase()}
+                    <div className="marquee-container">
+                        <div className="marquee">
+                            {messages.map((msg, idx) => (
+                                <div key={idx} className="marquee-item">
+                                    <div className={`avatar ${userColors[msg.username] || "bg-gray-400"}`}>
+                                        {msg.username[0].toUpperCase()}
+                                    </div>
+                                    <span className="username">{msg.username} :</span>
+                                    <span className="message">{msg.message}</span>
                                 </div>
-                                <span className="text-white font-medium text-sm">{msg.username} :</span>
-                                <span className="text-white font-medium text-sm">{msg.message}</span>
-                            </div>
-                        ))}
-                    </motion.div>
-
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div >
