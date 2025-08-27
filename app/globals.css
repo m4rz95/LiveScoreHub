@@ -80,6 +80,6 @@ body {
 /* Speed lebih cepat di mobile */
 @media (max-width: 768px) {
   .marquee {
-    animation-duration: 20s;
+    animation-duration: 40s;
   }
 }
