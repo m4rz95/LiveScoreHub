@@ -632,7 +632,7 @@ export default function PublicDashboard() {
                                                         }`}
                                                 >
                                                     <TD className="border border-gray-300 px-2 py-1">{i + 1}</TD>
-                                                    <TD className="border border-gray-300 px-2 py-1 font-semibold">{r.teamName}</TD>
+                                                    <TD className="border border-gray-300 px-2 py-1 font-semibold whitespace-nowrap">{r.teamName}</TD>
                                                     <TD className="border border-gray-300 px-2 py-1">{r.played}</TD>
                                                     <TD className="border border-gray-300 px-2 py-1">{r.win}</TD>
                                                     <TD className="border border-gray-300 px-2 py-1">{r.draw}</TD>
@@ -670,8 +670,8 @@ export default function PublicDashboard() {
                 </Card>
             </div>
 
+            {/* MARQUEE CHAT STYLE */}
             <div className="col-span-12 md:col-span-12 flex flex-col gap-4 order-3">
-                {/* MARQUEE CHAT STYLE */}
                 <div className="w-full overflow-hidden relative bg-gray-900/30 backdrop-blur-sm rounded-lg py-2">
                     <div className="marquee-container">
                         <div className="marquee">
