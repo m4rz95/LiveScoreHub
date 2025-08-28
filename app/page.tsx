@@ -613,7 +613,7 @@ export default function PublicDashboard() {
                                         <TH className="border border-gray-300 px-2 py-1">GA</TH>
                                         <TH className="border border-gray-300 px-2 py-1">GD</TH>
                                         <TH className="border border-gray-300 px-2 py-1">Pts</TH>
-                                        <TH className="border border-gray-300 px-2 py-1">Last 5</TH>
+                                        <TH className="border border-gray-300 px-2 py-1">Last 4</TH>
                                     </TR>
                                 </THead>
                                 <LayoutGroup>
@@ -677,7 +677,7 @@ export default function PublicDashboard() {
                         <div className="marquee">
                             {messages.map((msg, idx) => (
                                 <div key={idx} className="marquee-item">
-                                    <div className={`avatar ${userColors[msg.username] || "bg-gray-50"}`}>
+                                    <div className={`avatar ${userColors[msg.username] || "bg-gray-400"}`}>
                                         {msg.username[0].toUpperCase()}
                                     </div>
                                     <span className="username">{msg.username} :</span>
