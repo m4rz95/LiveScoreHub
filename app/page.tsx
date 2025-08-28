@@ -677,7 +677,7 @@ export default function PublicDashboard() {
                         <div className="marquee">
                             {messages.map((msg, idx) => (
                                 <div key={idx} className="marquee-item">
-                                    <div className={`avatar ${userColors[msg.username] || "bg-gray-400"}`}>
+                                    <div className={`avatar ${userColors[msg.username] || "bg-gray-50"}`}>
                                         {msg.username[0].toUpperCase()}
                                     </div>
                                     <span className="username">{msg.username} :</span>
